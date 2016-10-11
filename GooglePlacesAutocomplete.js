@@ -1,8 +1,6 @@
 import React, { PropTypes } from 'react';
-import { TextInput, View, ListView, ScrollView, Image, Text, Dimensions, TouchableHighlight, TouchableWithoutFeedback, Platform, ActivityIndicator, PixelRatio } from 'react-native';
+import { TextInput, View, ListView, Image, Text, Dimensions, TouchableHighlight, TouchableWithoutFeedback, Platform, ActivityIndicator, ProgressBarAndroid, PixelRatio } from 'react-native';
 import Qs from 'qs';
-
-const WINDOW = Dimensions.get('window');
 
 const defaultStyles = {
   container: {
@@ -37,7 +35,7 @@ const defaultStyles = {
     marginTop: 15,
   },
   listView: {
-    // flex: 1,
+    flex: 1,
   },
   row: {
     padding: 13,
@@ -51,7 +49,7 @@ const defaultStyles = {
   description: {
   },
   loader: {
-    // flex: 1,
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     height: 20,
@@ -120,8 +118,7 @@ const GooglePlacesAutocomplete = React.createClass({
       nearbyPlacesAPI: 'GooglePlacesSearch',
       filterReverseGeocodingByTypes: [],
       predefinedPlacesAlwaysVisible: false,
-      enableEmptySections: true,
-      listViewDisplayed: 'auto'
+      enableEmptySections: true
     };
   },
 
@@ -135,7 +132,7 @@ const GooglePlacesAutocomplete = React.createClass({
     return {
       text: this.props.getDefaultValue(),
       dataSource: ds.cloneWithRows(this.buildRowsFromResults([])),
-      listViewDisplayed: this.props.listViewDisplayed === 'auto' ? false : this.props.listViewDisplayed,
+      listViewDisplayed: false,
     };
   },
 
@@ -166,14 +163,6 @@ const GooglePlacesAutocomplete = React.createClass({
     });
 
     return [...res, ...results];
-  },
-
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.listViewDisplayed !== 'auto') {
-      this.setState({
-        listViewDisplayed: nextProps.listViewDisplayed,
-      });
-    }
   },
 
   componentWillUnmount() {
@@ -470,6 +459,14 @@ const GooglePlacesAutocomplete = React.createClass({
   },
 
   _getRowLoader() {
+    if (Platform.OS === 'android') {
+      return (
+        <ProgressBarAndroid
+          style={[defaultStyles.androidLoader, this.props.styles.androidLoader]}
+          styleAttr="Inverse"
+        />
+      );
+    }
     return (
       <ActivityIndicator
         animating={true}
@@ -491,23 +488,17 @@ const GooglePlacesAutocomplete = React.createClass({
     return null;
   },
 
-  _renderRow(rowData = {}, sectionID, rowID) {
+  _renderRow(rowData = {}) {
     rowData.description = rowData.description || rowData.formatted_address || rowData.name;
 
     return (
-      <ScrollView
-        style={{ flex: 1 }}
-        keyboardShouldPersistTaps={true}
-        horizontal={true}
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}>
-        <TouchableHighlight
-          style={{ minWidth: WINDOW.width }}
-          onPress={() =>
-            this._onPress(rowData)
-          }
-          underlayColor="#c8c7cc"
-        >
+      <TouchableHighlight
+        onPress={() =>
+          this._onPress(rowData)
+        }
+        underlayColor="#c8c7cc"
+      >
+        <View>
           <View style={[defaultStyles.row, this.props.styles.row, rowData.isPredefinedPlace ? this.props.styles.specialItemRow : {}]}>
             <Text
               style={[{flex: 1}, defaultStyles.description, this.props.styles.description, rowData.isPredefinedPlace ? this.props.styles.predefinedPlacesDescription : {}]}
@@ -517,16 +508,9 @@ const GooglePlacesAutocomplete = React.createClass({
             </Text>
             {this._renderLoader(rowData)}
           </View>
-        </TouchableHighlight>
-      </ScrollView>
-    );
-  },
-
-  _renderSeparator(sectionID, rowID) {
-    return (
-      <View
-        key={ `${sectionID}-${rowID}` }
-        style={[defaultStyles.separator, this.props.styles.separator]} />
+          <View style={[defaultStyles.separator, this.props.styles.separator]} />
+        </View>
+      </TouchableHighlight>
     );
   },
 
@@ -548,7 +532,6 @@ const GooglePlacesAutocomplete = React.createClass({
           style={[defaultStyles.listView, this.props.styles.listView]}
           dataSource={this.state.dataSource}
           renderRow={this._renderRow}
-          renderSeparator={this._renderSeparator}
           automaticallyAdjustContentInsets={false}
 
           {...this.props}
@@ -563,7 +546,7 @@ const GooglePlacesAutocomplete = React.createClass({
         >
           <Image
             style={[defaultStyles.powered, this.props.styles.powered]}
-            resizeMode={Image.resizeMode.contain}
+            resizeMode={Image.resizeMode.cover}
             source={require('./images/powered_by_google_on_white.png')}
           />
         </View>
